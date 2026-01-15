@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gastos fijos</title>
+
+  <!-- PWA -->
+  <meta name="theme-color" content="#111318" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+
+  <style>
+    :root{--bg:#0b0c10;--card:#111318;--muted:#8b93a7;--text:#e9edf7;--line:#1b1f2a;--accent:#7aa2ff;--danger:#ff6b6b;--ok:#2bd576;}
+    @media (prefers-color-scheme: light){:root{--bg:#fafbff;--card:#ffffff;--muted:#5a647a;--text:#0f172a;--line:#e8ecf6;--accent:#2f6bff;--danger:#e11d48;--ok:#16a34a;}}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--text);}
+    .wrap{max-width:980px;margin:24px auto;padding:0 16px;}
+    header{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
+    h1{font-size:20px;margin:0;letter-spacing:.2px;}
+    .sub{margin:6px 0 0;color:var(--muted);font-size:13px;max-width:56ch;}
+    .row{display:grid;grid-template-columns: 1.2fr .7fr .7fr .4fr; gap:10px; align-items:end;}
+    @media (max-width: 860px){.row{grid-template-columns: 1fr 1fr;}.hide-sm{display:none}}
+    .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow: 0 8px 24px rgba(0,0,0,.12);}
+    .stack{display:flex;flex-direction:column;gap:10px;}
+    label{font-size:12px;color:var(--muted);display:block;margin:0 0 6px;}
+    input,select,button{width:100%; padding:11px 12px; border-radius:12px; border:1px solid var(--line); background:transparent; color:var(--text); outline:none;}
+    input::placeholder{color:color-mix(in srgb,var(--muted) 85%, transparent)}
+    input:focus,select:focus{border-color:color-mix(in srgb,var(--accent) 70%, var(--line))}
+    button{cursor:pointer; border-color:color-mix(in srgb,var(--accent) 70%, var(--line)); background:color-mix(in srgb,var(--accent) 10%, transparent);}
+    button:hover{background:color-mix(in srgb,var(--accent) 16%, transparent)}
+    .btn-ghost{border-color:var(--line); background:transparent;}
+    .btn-ghost:hover{background:color-mix(in srgb,var(--line) 55%, transparent)}
+    .btn-danger{border-color:color-mix(in srgb,var(--danger) 70%, var(--line)); background:color-mix(in srgb,var(--danger) 10%, transparent)}
+    .btn-danger:hover{background:color-mix(in srgb,var(--danger) 16%, transparent)}
+    .topbar{display:flex;gap:10px;align-items:center;justify-content:flex-end}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--line) 30%, transparent)}
+    .pill strong{font-variant-numeric: tabular-nums;}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;}
+    @media (max-width: 860px){.grid{grid-template-columns:1fr;}}
+    .table{width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border:1px solid var(--line); border-radius:14px;}
+    .table th,.table td{padding:10px 10px; border-bottom:1px solid var(--line); font-size:13px;}
+    .table th{color:var(--muted); font-weight:600; text-align:left; background:color-mix(in srgb,var(--line) 35%, transparent)}
+    .table tr:last-child td{border-bottom:none}
+    .table td.num{text-align:right; font-variant-numeric: tabular-nums;}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+    .kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .kpi .box{border:1px solid var(--line);border-radius:14px;padding:12px;background:color-mix(in srgb,var(--line) 20%, transparent)}
+    .kpi .title{font-size:12px;color:var(--muted);margin:0 0 8px}
+    .kpi .val{font-size:20px;margin:0;font-variant-numeric:tabular-nums;}
+    .hint{font-size:12px;color:var(--muted);line-height:1.35}
+    .hr{height:1px;background:var(--line);margin:10px 0;}
+    .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .right{margin-left:auto}
+    .mono{font-variant-numeric:tabular-nums}
+    .sr{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+    .toast{position:fixed;inset:auto 16px 16px auto;display:flex;flex-direction:column;gap:8px;z-index:10}
+    .toast .t{max-width:360px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:0 12px 40px rgba(0,0,0,.22);font-size:13px;color:var(--text)}
+    .toast .t b{color:var(--ok)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Gastos fijos</h1>
+        <p class="sub">Añade tus gastos mensuales recurrentes, agrúpalos por tipo y revisa el total y el peso de cada categoría para decidir dónde recortar.</p>
+      </div>
+      <div class="topbar">
+        <div class="pill" title="Suma de todos los gastos mensuales fijos">
+          <span>Total/mes</span>
+          <strong id="totalMes">0,00 €</strong>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <div class="stack">
+          <div class="row">
+            <div>
+              <label for="nombre">Concepto</label>
+              <input id="nombre" type="text" placeholder="Ej.: Internet, Seguro coche, Guardería…" maxlength="60" />
+            </div>
+            <div>
+              <label for="tipo">Tipo</label>
+              <select id="tipo"></select>
+            </div>
+            <div>
+              <label for="importe">Importe mensual</label>
+              <input id="importe" type="text" inputmode="decimal" placeholder="Ej.: 49,90" />
+            </div>
+            <div>
+              <label class="sr" for="add">Añadir</label>
+              <button id="add">Añadir</button>
+            </div>
+          </div>
+
+          <div class="flex">
+            <span class="badge" id="countBadge">0 gastos</span>
+            <span class="badge">Objetivo ahorro: <span class="mono" id="objetivoAhorro">0,00 €</span></span>
+            <div class="right flex">
+              <label for="filtro" class="sr">Filtrar</label>
+              <select id="filtro" class="btn-ghost" style="max-width:260px"></select>
+              <button id="export" class="btn-ghost" style="max-width:170px">Exportar CSV</button>
+              <button id="reset" class="btn-danger" style="max-width:170px">Borrar todo</button>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div style="overflow:auto">
+            <table class="table" aria-label="Lista de gastos">
+              <thead>
+                <tr>
+                  <th>Concepto</th>
+                  <th>Tipo</th>
+                  <th class="hide-sm">Notas</th>
+                  <th class="num">€/mes</th>
+                  <th class="num">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+
+          <p class="hint">Consejo: añade una nota breve con la acción de reducción (p. ej. “renegociar”, “comparar”, “cancelar”, “alternativa más barata”).</p>
+        </div>
+      </section>
+
+      <aside class="card">
+        <div class="stack">
+          <div class="kpi">
+            <div class="box">
+              <p class="title">Top 3 tipos</p>
+              <p class="val" id="topTipos">—</p>
+            </div>
+            <div class="box">
+              <p class="title">Mayor gasto</p>
+              <p class="val" id="mayorGasto">—</p>
+            </div>
+          </div>
+
+          <div class="box" style="border:1px solid var(--line);border-radius:14px;padding:12px;background:color-mix(in srgb,var(--line) 20%, transparent)">
+            <p class="title" style="margin:0 0 8px;color:var(--muted);font-size:12px">Resumen por tipo</p>
+            <div id="resumenTipos" class="stack" style="gap:8px"></div>
+          </div>
+
+          <div class="box" style="border:1px solid var(--line);border-radius:14px;padding:12px;background:color-mix(in srgb,var(--line) 20%, transparent)">
+            <p class="title" style="margin:0 0 8px;color:var(--muted);font-size:12px">Objetivo de reducción</p>
+            <div class="row" style="grid-template-columns:1fr .9fr; gap:10px; align-items:end">
+              <div>
+                <label for="porcentaje">Reducir un % del total</label>
+                <input id="porcentaje" type="number" min="0" max="100" step="1" value="10" />
+              </div>
+              <div>
+                <label for="accion">Sugerencia rápida</label>
+                <select id="accion">
+                  <option value="Renegociar">Renegociar</option>
+                  <option value="Comparar ofertas">Comparar ofertas</option>
+                  <option value="Cancelar">Cancelar</option>
+                  <option value="Reducir uso">Reducir uso</option>
+                  <option value="Cambiar a alternativa">Cambiar a alternativa</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex" style="margin-top:10px">
+              <button id="aplicarAccion" class="btn-ghost" style="flex:1">Añadir nota al gasto mayor</button>
+              <button id="ordenar" style="flex:1">Ordenar por €/mes</button>
+            </div>
+            <p class="hint" style="margin:10px 0 0">El objetivo muestra cuánto ahorrarías al reducir ese porcentaje. La acción rápida añade una nota al gasto más alto para no olvidarlo.</p>
+          </div>
+
+          <p class="hint">Los datos se guardan en tu navegador (localStorage). No se envía nada a internet.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
+
+  <template id="rowTpl">
+    <tr>
+      <td><input class="n" type="text" maxlength="60" /></td>
+      <td><select class="t"></select></td>
+      <td class="hide-sm"><input class="note" type="text" maxlength="80" placeholder="Ej.: renegociar en abril" /></td>
+      <td class="num"><input class="a" type="text" inputmode="decimal" style="text-align:right" /></td>
+      <td class="num">
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="dup btn-ghost" title="Duplicar" style="width:auto">⎘</button>
+          <button class="del btn-danger" title="Eliminar" style="width:auto">✕</button>
+        </div>
+      </td>
+    </tr>
+  </template>
+
+  <script>
+    // --- Registrar Service Worker (PWA) ---
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", async () => {
+        try { await navigator.serviceWorker.register("./sw.js"); }
+        catch (e) { /* si falla, la app sigue funcionando igual */ }
+      });
+    }
+
+    const TIPOS = [
+      "Vivienda (alquiler/hipoteca)","Comunidad y mantenimiento","Suministros (luz/agua/gas)",
+      "Internet y telefonía","Seguros (hogar/salud/vida)","Coche (seguro/impuestos)","Transporte (abonos/bus/metro)",
+      "Combustible","Préstamos y deudas","Impuestos y tasas","Alimentación (básica)","Higiene y limpieza",
+      "Salud (medicación/recurrencias)","Educación (colegio/material)","Guardería/canguro",
+      "Suscripciones (streaming/apps)","Gimnasio/deporte","Mascotas (comida/veterinario)","Ropa (recurrente)",
+      "Ocio (recurrente)","Donaciones/iglesia","Ahorro/inversión (aporte fijo)","Otros"
+    ];
+    const STORAGE_KEY = "gastosFijos_v1";
+    const $ = (sel) => document.querySelector(sel);
+    const fmtEUR = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
+
+    function parseMoney(input){
+      if (typeof input !== "string") input = String(input ?? "");
+      const cleaned = input.trim().replace(/\s/g, "").replace(/\./g, "").replace(/,/g, ".");
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : NaN;
+    }
+    function moneyToInput(n){
+      if (!Number.isFinite(n)) return "";
+      return (Math.round(n * 100) / 100).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function uid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
+    function toast(msg, ok=true){
+      const host = $("#toast");
+      const el = document.createElement("div");
+      el.className = "t";
+      el.innerHTML = ok ? `<b>✓</b> ${msg}` : `<span style="color:var(--danger)">⚠</span> ${msg}`;
+      host.appendChild(el);
+      setTimeout(() => el.remove(), 2600);
+    }
+    function load(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter(x => x && typeof x === "object").map(x => ({
+          id: String(x.id ?? uid()),
+          nombre: String(x.nombre ?? ""),
+          tipo: String(x.tipo ?? TIPOS[0]),
+          importe: Number(x.importe ?? 0),
+          nota: String(x.nota ?? "")
+        }));
+      }catch{ return []; }
+    }
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+    function round2(n){ return Math.round(n*100)/100; }
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+    function escapeHtml(str){
+      return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+        .replace(/\"/g,"&quot;").replace(/'/g,"&#039;");
+    }
+
+    let items = load();
+    let filtroTipo = "__ALL__";
+    let sortDesc = true;
+
+    const tipoSel = $("#tipo");
+    const filtroSel = $("#filtro");
+
+    function fillSelect(select, includeAll=false){
+      select.innerHTML = "";
+      if (includeAll){
+        const opt = document.createElement("option");
+        opt.value = "__ALL__";
+        opt.textContent = "Todos los tipos";
+        select.appendChild(opt);
+      }
+      for (const t of TIPOS){
+        const opt = document.createElement("option");
+        opt.value = t;
+        opt.textContent = t;
+        select.appendChild(opt);
+      }
+    }
+    fillSelect(tipoSel);
+    fillSelect(filtroSel, true);
+
+    function getVisibleItems(){
+      const base = (filtroTipo === "__ALL__") ? items : items.filter(i => i.tipo === filtroTipo);
+      return [...base].sort((a,b) => sortDesc ? (b.importe - a.importe) : (a.importe - b.importe));
+    }
+
+    function getById(id){ return items.find(i => i.id === id); }
+
+    function update(id, patch){
+      const idx = items.findIndex(i => i.id === id);
+      if (idx < 0) return;
+      items[idx] = { ...items[idx], ...patch };
+      save();
+      renderStats();
+    }
+    function removeItem(id){
+      items = items.filter(i => i.id !== id);
+      save();
+      render();
+      toast("Gasto eliminado");
+    }
+    function duplicate(id){
+      const it = getById(id);
+      if (!it) return;
+      items.push({ ...it, id: uid(), nombre: (it.nombre || "(sin nombre)") + " (copia)" });
+      save();
+      render();
+      toast("Gasto duplicado");
+    }
+    function addItem(nombre, tipo, importe){
+      items.push({ id: uid(), nombre, tipo, importe: round2(importe), nota: "" });
+      save();
+      render();
+    }
+
+    function render(){
+      const tbody = $("#tbody");
+      tbody.innerHTML = "";
+      const visible = getVisibleItems();
+      const tpl = $("#rowTpl");
+
+      for (const it of visible){
+        const node = tpl.content.firstElementChild.cloneNode(true);
+        const n = node.querySelector(".n");
+        const t = node.querySelector(".t");
+        const a = node.querySelector(".a");
+        const note = node.querySelector(".note");
+        const del = node.querySelector(".del");
+        const dup = node.querySelector(".dup");
+
+        n.value = it.nombre;
+        fillSelect(t);
+        t.value = TIPOS.includes(it.tipo) ? it.tipo : "Otros";
+        a.value = moneyToInput(it.importe);
+        note.value = it.nota || "";
+
+        n.addEventListener("input", () => update(it.id, { nombre: n.value }));
+        t.addEventListener("change", () => update(it.id, { tipo: t.value }));
+        note.addEventListener("input", () => update(it.id, { nota: note.value }));
+
+        a.addEventListener("blur", () => {
+          const v = parseMoney(a.value);
+          if (!Number.isFinite(v) || v < 0){
+            a.value = moneyToInput(getById(it.id).importe);
+            toast("Importe no válido", false);
+            return;
+          }
+          a.value = moneyToInput(v);
+          update(it.id, { importe: round2(v) });
+        });
+
+        del.addEventListener("click", () => removeItem(it.id));
+        dup.addEventListener("click", () => duplicate(it.id));
+
+        tbody.appendChild(node);
+      }
+
+      renderStats();
+    }
+
+    function renderStats(){
+      const total = items.reduce((s,i)=>s+i.importe,0);
+      $("#totalMes").textContent = fmtEUR.format(total);
+      $("#countBadge").textContent = `${items.length} gasto${items.length===1?"":"s"}`;
+
+      const pct = clamp(Number($("#porcentaje").value || 0), 0, 100);
+      $("#objetivoAhorro").textContent = fmtEUR.format(total * (pct/100));
+
+      const byType = new Map();
+      for (const it of items){ byType.set(it.tipo, (byType.get(it.tipo) || 0) + it.importe); }
+      const entries = [...byType.entries()].sort((a,b)=>b[1]-a[1]);
+
+      const resumen = $("#resumenTipos");
+      resumen.innerHTML = "";
+      if (entries.length === 0){
+        const p = document.createElement("div");
+        p.className = "hint";
+        p.textContent = "Aún no hay gastos. Añade algunos para ver el resumen.";
+        resumen.appendChild(p);
+      } else {
+        for (const [tipo, sum] of entries.slice(0, 10)){
+          const pctType = total > 0 ? (sum/total)*100 : 0;
+          const line = document.createElement("div");
+          line.style.display = "grid";
+          line.style.gridTemplateColumns = "1fr auto";
+          line.style.gap = "10px";
+          line.style.alignItems = "baseline";
+          line.innerHTML = `
+            <div style="min-width:0">
+              <div style="display:flex;justify-content:space-between;gap:10px">
+                <span style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(tipo)}">${escapeHtml(tipo)}</span>
+                <span class="mono" style="color:var(--muted);font-size:12px">${pctType.toFixed(0)}%</span>
+              </div>
+              <div style="height:8px;border-radius:999px;background:color-mix(in srgb,var(--line) 55%, transparent);overflow:hidden;margin-top:6px">
+                <div style="height:100%;width:${Math.min(100, pctType)}%;background:color-mix(in srgb,var(--accent) 60%, transparent)"></div>
+              </div>
+            </div>
+            <div class="mono" style="font-size:13px">${fmtEUR.format(sum)}</div>
+          `;
+          resumen.appendChild(line);
+        }
+      }
+
+      const top3 = entries.slice(0,3).map(([t]) => t.split(" (")[0]).join(", ") || "—";
+      $("#topTipos").textContent = top3 || "—";
+
+      const max = items.reduce((m,i)=> (i.importe > (m?.importe ?? -1) ? i : m), null);
+      $("#mayorGasto").textContent = max ? `${fmtEUR.format(max.importe)}` : "—";
+    }
+
+    $("#add").addEventListener("click", () => {
+      const nombre = $("#nombre").value.trim();
+      const tipo = $("#tipo").value;
+      const v = parseMoney($("#importe").value);
+      if (!nombre){ toast("Escribe un concepto", false); return; }
+      if (!Number.isFinite(v) || v < 0){ toast("Importe no válido", false); return; }
+      addItem(nombre, tipo, v);
+      $("#nombre").value = "";
+      $("#importe").value = "";
+      $("#nombre").focus();
+      toast("Gasto añadido");
+    });
+
+    [$("#nombre"), $("#importe")].forEach(el => {
+      el.addEventListener("keydown", (e) => { if (e.key === "Enter") $("#add").click(); });
+    });
+
+    $("#filtro").addEventListener("change", () => { filtroTipo = filtroSel.value; render(); });
+
+    $("#ordenar").addEventListener("click", () => {
+      sortDesc = !sortDesc;
+      render();
+      toast(sortDesc ? "Orden: mayor a menor" : "Orden: menor a mayor");
+    });
+
+    $("#porcentaje").addEventListener("input", renderStats);
+
+    $("#aplicarAccion").addEventListener("click", () => {
+      if (items.length === 0){ toast("No hay gastos aún", false); return; }
+      const accion = $("#accion").value;
+      const max = items.reduce((m,i)=> (i.importe > (m?.importe ?? -1) ? i : m), null);
+      if (!max) return;
+      const nota = (max.nota || "").trim();
+      const prefix = accion + ": ";
+      const next = nota ? (nota.includes(prefix) ? nota : (prefix + nota)) : (prefix + "revisar este gasto");
+      update(max.id, { nota: next });
+      toast("Nota añadida al gasto mayor");
+      render();
+    });
+
+    $("#export").addEventListener("click", () => {
+      const lines = [];
+      lines.push(["Concepto","Tipo","Importe mensual","Notas"].join(","));
+      for (const it of items){
+        const row = [it.nombre, it.tipo, String(it.importe).replace(".",","), it.nota || ""]
+          .map(x => `"${String(x).replace(/\"/g,'""')}"`)
+          .join(",");
+        lines.push(row);
+      }
+      const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "gastos-fijos.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast("CSV exportado");
+    });
+
+    $("#reset").addEventListener("click", () => {
+      const total = items.reduce((s,i)=>s+i.importe,0);
+      const ok = confirm(`Vas a borrar todos tus gastos (${items.length}). Total actual: ${fmtEUR.format(total)}. ¿Continuar?`);
+      if (!ok) return;
+      items = [];
+      save();
+      render();
+      toast("Todo borrado");
+    });
+
+    filtroSel.value = "__ALL__";
+    render();
+  </script>
+</body>
+</html>
